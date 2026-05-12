@@ -1,0 +1,62 @@
+seed: 42
+
+data:
+  # Folders containing .mat files.
+  train_mat_dir: "./data/train_mat"
+  val_mat_dir: "./data/val_mat"
+
+  # Path inside the .mat file to your numeric velocity array.
+  # For mrStruct.dataAy, use ["mrStruct", "dataAy"].
+  mat_var_path: ["mrStruct", "dataAy"]
+
+  # Your common case: [X, Y, Z, 3, T]
+  # Alternative: "XYZTC" for [X, Y, Z, T, 3]
+  layout: "XYZCT"
+
+  # HR patch size. Must be divisible by scale_factor.
+  # For Z around 25, 16 is safe.
+  patch_size_hr: [64, 64, 16]
+  scale_factor: 2
+
+  # Random samples used per epoch when training directly from .mat files.
+  samples_per_epoch: 2000
+  val_samples: 300
+
+  # 90% flow-region sampling mimics the paper's idea of oversampling flow regions.
+  flow_sample_prob: 0.90
+  mask_threshold_rel: 0.03
+
+  # Synthetic LR degradation/noise in normalized velocity units.
+  # Start small; increase if your real data is noisy.
+  velocity_noise_std: 0.02
+  magnitude_noise_std: 0.02
+
+  # If true, train from .npz patches produced by scripts/prepare_dataset.py.
+  use_precomputed: false
+  train_npz_dir: "./prepared/train"
+  val_npz_dir: "./prepared/val"
+
+model:
+  growth_rate: 16
+  base_features: 32       # 2 * growth_rate, matching the paper description
+  layers_per_block: 5     # 2k input + 5k growth = 7k output inside a block
+  num_hr_blocks: 3
+  scale_factor: 2
+  use_residual: true
+
+loss:
+  lambda_seg: 0.0016
+  lambda_div: 0.066
+  divergence_mode: "l1"   # "l1" closer to paper's cumulative absolute divergence; "l2" also supported
+  use_masked_mse: false    # set true if background dominates your patches too much
+
+train:
+  epochs: 100
+  batch_size: 2
+  num_workers: 2
+  learning_rate: 0.0001
+  weight_decay: 0.0
+  mixed_precision: true
+  checkpoint_dir: "./checkpoints"
+  save_every: 10
+  grad_clip_norm: 1.0
